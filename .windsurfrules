@@ -1,0 +1,24 @@
+# Global Rules (.windsurfrules)
+
+## Backend (Java Spring Boot) - Hexagonal Architecture (Strict)
+- The backend MUST follow strict Hexagonal Architecture (Ports & Adapters).
+- Domain layer MUST NOT depend on framework/infrastructure.
+- Only adapters may depend on Spring, persistence, web, messaging, etc.
+- All external interactions MUST be expressed as ports (interfaces) and implemented by adapters.
+- Use cases (application services) orchestrate domain behavior and call ports.
+
+## Frontend (React) - Zero Trust
+- The frontend MUST be treated as untrusted.
+- The backend MUST recalculate and validate all monetary amounts (totals, subtotals, taxes/discounts if any).
+- Backend MUST validate stock, prices, and business rules independently of any frontend-provided values.
+
+## Security
+- Authentication MUST be JWT Stateless.
+- Do NOT use server-side sessions.
+- JWT validation MUST occur on every request to protected endpoints.
+
+## CORS
+- Backend MUST allow CORS only for the origin:
+  - http://localhost:3000
+- Allowed headers MUST include Authorization and Content-Type.
+- Allowed methods MUST include GET, POST, PUT, PATCH, DELETE, OPTIONS.
