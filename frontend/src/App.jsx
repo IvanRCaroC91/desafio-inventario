@@ -7,11 +7,16 @@ import { useAuth } from './state/AuthContext.jsx'
 export default function App() {
   const { token, logout } = useAuth()
   const [cartOpen, setCartOpen] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const handleRefreshProducts = () => {
+    setRefreshKey(prev => prev + 1)
+  }
 
   const content = useMemo(() => {
     if (!token) return <Login />
-    return <ProductCatalog onOpenCart={() => setCartOpen(true)} />
-  }, [token])
+    return <ProductCatalog key={refreshKey} onOpenCart={() => setCartOpen(true)} />
+  }, [token, refreshKey])
 
   return (
     <div style={{ fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif' }}>
@@ -33,7 +38,11 @@ export default function App() {
 
       <main style={{ padding: 16 }}>{content}</main>
 
-      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
+      <CartDrawer 
+        open={cartOpen} 
+        onClose={() => setCartOpen(false)} 
+        onRefreshProducts={handleRefreshProducts}
+      />
     </div>
   )
 }

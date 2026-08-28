@@ -12,7 +12,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     setupAuthInterceptors(
-      () => token,
+      () => localStorage.getItem(STORAGE_KEY),
       () => {
         setToken('')
         localStorage.removeItem(STORAGE_KEY)

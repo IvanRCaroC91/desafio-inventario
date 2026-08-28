@@ -7,16 +7,24 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([])
   const [checkingOut, setCheckingOut] = useState(false)
   const [checkoutError, setCheckoutError] = useState('')
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false)
 
-  function addToCart(product) {
+  function addToCart(product, stockDisponible) {
     setItems((prev) => {
       const existing = prev.find((i) => i.productoId === product.id)
       if (existing) {
+        const nuevaCantidad = existing.cantidad + 1
+        if (nuevaCantidad > stockDisponible) {
+          return prev
+        }
         return prev.map((i) =>
-          i.productoId === product.id ? { ...i, cantidad: i.cantidad + 1, nombre: product.nombre } : i,
+          i.productoId === product.id ? { ...i, cantidad: nuevaCantidad, nombre: product.nombre, precio: product.precio, stockDisponible } : i,
         )
       }
-      return [...prev, { productoId: product.id, nombre: product.nombre, cantidad: 1 }]
+      if (stockDisponible < 1) {
+        return prev
+      }
+      return [...prev, { productoId: product.id, nombre: product.nombre, cantidad: 1, precio: product.precio, stockDisponible }]
     })
   }
 
@@ -24,7 +32,10 @@ export function CartProvider({ children }) {
     setItems((prev) => prev.filter((i) => i.productoId !== productoId))
   }
 
-  function changeQty(productoId, cantidad) {
+  function changeQty(productoId, cantidad, stockDisponible) {
+    if (cantidad > stockDisponible) {
+      return
+    }
     setItems((prev) =>
       prev
         .map((i) => (i.productoId === productoId ? { ...i, cantidad } : i))
@@ -35,17 +46,25 @@ export function CartProvider({ children }) {
   async function checkout({ usuarioId }) {
     setCheckingOut(true)
     setCheckoutError('')
+    setCheckoutSuccess(false)
     try {
-      // Restricción: enviar SOLO productoId y cantidad (nunca precios/montos)
       const payload = {
         usuarioId,
         items: items.map((i) => ({ productoId: i.productoId, cantidad: i.cantidad })),
       }
       const res = await api.post('/api/ventas', payload)
       setItems([])
+      setCheckoutSuccess(true)
       return res.data
     } catch (e) {
-      const msg = e?.response?.data?.message || 'No se pudo realizar la venta'
+      let msg = 'No se pudo realizar la venta'
+      if (e?.response?.data?.error === 'STOCK_INSUFICIENTE') {
+        msg = `Stock insuficiente. Disponible: ${e.response.data.stockDisponible}, solicitado: ${e.response.data.cantidadSolicitada}`
+      } else if (e?.response?.data?.error === 'PRODUCTO_NO_ENCONTRADO') {
+        msg = 'Uno de los productos no existe'
+      } else if (e?.response?.data?.message) {
+        msg = e.response.data.message
+      }
       setCheckoutError(msg)
       throw e
     } finally {
@@ -54,8 +73,8 @@ export function CartProvider({ children }) {
   }
 
   const value = useMemo(
-    () => ({ items, addToCart, removeFromCart, changeQty, checkout, checkingOut, checkoutError }),
-    [items, checkingOut, checkoutError],
+    () => ({ items, addToCart, removeFromCart, changeQty, checkout, checkingOut, checkoutError, checkoutSuccess }),
+    [items, checkingOut, checkoutError, checkoutSuccess],
   )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

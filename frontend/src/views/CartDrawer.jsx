@@ -1,9 +1,18 @@
 import React, { useMemo, useState } from 'react'
 import { useCart } from '../state/CartContext.jsx'
+import { useAuth } from '../state/AuthContext.jsx'
 
-export default function CartDrawer({ open, onClose }) {
-  const { items, removeFromCart, changeQty, checkout, checkingOut, checkoutError } = useCart()
+export default function CartDrawer({ open, onClose, onRefreshProducts }) {
+  const { items, removeFromCart, changeQty, checkout, checkingOut, checkoutError, checkoutSuccess } = useCart()
+  const { token } = useAuth()
   const [usuarioId, setUsuarioId] = useState(1)
+
+  const total = useMemo(() => {
+    return items.reduce((sum, item) => {
+      const subtotal = (item.precio || 0) * item.cantidad
+      return sum + subtotal
+    }, 0)
+  }, [items])
 
   const content = useMemo(() => {
     if (!open) return null
@@ -19,59 +28,76 @@ export default function CartDrawer({ open, onClose }) {
           </div>
 
           <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-            <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>
-              usuarioId
-              <input
-                type="number"
-                value={usuarioId}
-                onChange={(e) => setUsuarioId(parseInt(e.target.value || '0', 10))}
-                style={input()}
-              />
-            </label>
-
-            {items.length === 0 ? (
-              <div style={{ color: '#6b7280' }}>No hay items en el carrito.</div>
+            {!token ? (
+              <div style={{ color: '#b91c1c', padding: 12, background: '#fee2e2', borderRadius: 8 }}>
+                Debes iniciar sesión para realizar compras
+              </div>
             ) : (
-              items.map((i) => (
-                <div key={i.productoId} style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 10 }}>
-                  <div style={{ fontWeight: 600 }}>{i.nombre || `Producto ${i.productoId}`}</div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
-                    <button onClick={() => changeQty(i.productoId, i.cantidad - 1)} style={btnSecondary()}>
-                      -
-                    </button>
-                    <div style={{ minWidth: 28, textAlign: 'center' }}>{i.cantidad}</div>
-                    <button onClick={() => changeQty(i.productoId, i.cantidad + 1)} style={btnSecondary()}>
-                      +
-                    </button>
-                    <button onClick={() => removeFromCart(i.productoId)} style={btnDanger()}>
-                      Quitar
-                    </button>
+              <>
+                {items.length === 0 ? (
+                  <div style={{ color: '#6b7280' }}>No hay items en el carrito.</div>
+                ) : (
+                  <>
+                    {items.map((i) => (
+                      <div key={i.productoId} style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 10 }}>
+                        <div style={{ fontWeight: 600 }}>{i.nombre || `Producto ${i.productoId}`}</div>
+                        <div style={{ fontSize: 13, color: '#374151', marginTop: 4 }}>
+                          ${i.precio || 0} × {i.cantidad} = <b>${((i.precio || 0) * i.cantidad).toFixed(2)}</b>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                          <button 
+                            onClick={() => changeQty(i.productoId, i.cantidad - 1, i.stockDisponible || 100)} 
+                            style={btnSecondary()}
+                          >
+                            -
+                          </button>
+                          <div style={{ minWidth: 28, textAlign: 'center' }}>{i.cantidad}</div>
+                          <button 
+                            onClick={() => changeQty(i.productoId, i.cantidad + 1, i.stockDisponible || 100)} 
+                            style={btnSecondary()}
+                          >
+                            +
+                          </button>
+                          <button onClick={() => removeFromCart(i.productoId)} style={btnDanger()}>
+                            Quitar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 10, marginTop: 10 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, textAlign: 'right' }}>
+                        TOTAL: ${total.toFixed(2)}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {checkoutSuccess ? (
+                  <div style={{ color: '#065f46', padding: 12, background: '#d1fae5', borderRadius: 8 }}>
+                    ¡Venta realizada exitosamente! El inventario ha sido actualizado.
                   </div>
-                </div>
-              ))
+                ) : null}
+
+                {checkoutError ? <div style={{ color: '#b91c1c' }}>{checkoutError}</div> : null}
+
+                <button
+                  disabled={items.length === 0 || checkingOut || !token}
+                  style={items.length === 0 || checkingOut || !token ? btnDisabled() : btn()}
+                  onClick={async () => {
+                    await checkout({ usuarioId })
+                    onRefreshProducts?.()
+                  }}
+                >
+                  {checkingOut ? 'Procesando...' : 'Checkout'}
+                </button>
+              </>
             )}
-
-            {checkoutError ? <div style={{ color: '#b91c1c' }}>{checkoutError}</div> : null}
-
-            <button
-              disabled={items.length === 0 || checkingOut}
-              style={items.length === 0 || checkingOut ? btnDisabled() : btn()}
-              onClick={async () => {
-                await checkout({ usuarioId })
-                onClose?.()
-              }}
-            >
-              {checkingOut ? 'Procesando...' : 'Checkout'}
-            </button>
-
-            <div style={{ fontSize: 12, color: '#6b7280' }}>
-              En el checkout se envía únicamente <code>productoId</code> y <code>cantidad</code>.
-            </div>
           </div>
         </div>
       </div>
     )
-  }, [open, onClose, items, removeFromCart, changeQty, checkout, checkingOut, checkoutError, usuarioId])
+  }, [open, onClose, items, removeFromCart, changeQty, checkout, checkingOut, checkoutError, checkoutSuccess, usuarioId, token, total, onRefreshProducts])
 
   return content
 }

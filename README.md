@@ -4,7 +4,7 @@
 **Metodología:** Spec-Driven Development (SDD)  
 **Autor:** Ivan Rene Caro Cataño  
 **Fecha:** 27 de Agosto de 2026  
-**Versión:** 1.0.0
+**Versión:** 1.0.1
 
 ---
 
@@ -267,6 +267,30 @@ desafio-inventario/
 - **Transaccionalidad:** Las ventas son atómicas; si falla cualquier paso, se hace rollback completo
 - **Seguridad:** No se usan sesiones server-side; todo es stateless con JWT
 - **Persistencia:** PostgreSQL con restricciones CHECK para garantizar integridad de datos
+
+---
+
+## Historial de Versiones
+
+### v1.0.1 (27 de Agosto de 2026)
+- **Corrección:** Interceptor JWT ahora lee token directamente de localStorage en lugar del estado de React
+- **Corrección:** `ProductoPersistenceMapper` ahora establece `createdAt` al crear entidades
+- **Mejora:** Validación de stock en frontend (CartContext)
+- **Mejora:** Visualización de precios, subtotales y total en carrito
+- **Mejora:** Refresh automático de productos después de checkout exitoso
+- **Mejora:** Manejo de errores específicos con mensajes descriptivos
+
+### v1.0.0 (27 de Agosto de 2026)
+- Versión inicial con arquitectura hexagonal completa
+- Autenticación JWT stateless
+- Gestión de inventario y ventas
+- Validación de stock en backend
+
+---
+
+## Documentación Adicional
+
+- **INFORME_FINAL.md:** Informe de cumplimiento con estado de implementación y pruebas realizadas
 
 ---
 

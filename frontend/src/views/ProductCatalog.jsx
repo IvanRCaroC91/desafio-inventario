@@ -46,7 +46,7 @@ export default function ProductCatalog({ onOpenCart }) {
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button
                 onClick={() => {
-                  addToCart(p)
+                  addToCart(p, p.stock)
                   onOpenCart?.()
                 }}
                 disabled={p.stock <= 0}
